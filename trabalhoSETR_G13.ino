@@ -12,7 +12,7 @@
 #define LEDR 15
 
 // Set Constants
-const String urlPath = "clockIn";
+const String urlPath = "clockin";
 const int servoPin = 16;
 
 // Declare Constants
@@ -24,7 +24,7 @@ String tagID = "";
 Servo servo;
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 EthernetClient EthernetClient;
-LiquidCrystal lcd(7, 6, 5, 4, 3, 2);  //Parameters: (rs, enable, d4, d5, d6, d7)
+LiquidCrystal lcd(3, 4, 5, 6, 17, 2);  //Parameters: (rs, enable, d4, d5, d6, d7)
 HttpClient client = HttpClient(EthernetClient, "setr.braintechcloud.com", 80);
 
 void setup() {
@@ -61,7 +61,6 @@ void loop() {
   while (getID()) {
     // Set Default Variables
     String postData = "";
-    int angle = 0;
     // Serialize JSON
     StaticJsonDocument<32> doc;
     doc["tag"] = tagID;
@@ -84,46 +83,65 @@ void loop() {
     lcd.clear();
     lcd.setCursor(0, 0);
 
-
     if (statusCode == 200) {
-      digitalWrite(LEDG, HIGH);
-
-      // TODO: Parse JSON and output name in second line of LCD
-      // https://arduinojson.org/v6/example/parser/
-      // https://arduinojson.org/v6/doc/deserialization/
-      // String response = client.responseBody();
-      // lcd.print("Authorized");
-      // lcd.setCursor(0, 1);
-      // lcd.print( ---Name from JSON Response---);
-
-      // TODO: Rotate Servo
-      // for (angle = 0; angle < 25; angle += 1) {
-      //   servo.write(angle);
-      //   delay(20);
-      // }
+      String response = client.responseBody();
 
       // Debug Response
       Serial.println("Authorized");
-      String response = client.responseBody();
       Serial.print("Response: ");
       Serial.println(response);
-    } else {
-      digitalWrite(LEDR, HIGH);
-      // lcd.print("Not Authorized");
 
+      // Turns the Green Led
+      digitalWrite(LEDG, HIGH);
+
+      // Parse JSON and output name in second line of LCD
+      StaticJsonDocument<100> res;
+
+      // Deserialize the JSON document
+      DeserializationError error = deserializeJson(res, response);
+
+      // Test if parsing succeeds.
+      if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.f_str());
+        return;
+      }
+
+      // Fetch Values
+      const char* name = res["name"];
+
+      // Prints
+      lcd.print("Authorized");
+      lcd.setCursor(0, 1);
+      lcd.print(name);
+
+      // Rotate Servo
+      for (int i = 1; i < 91; i += 1) {
+        servo.write(i);
+        delay(20);
+      }
+
+    } else {
       // Debug Response
       Serial.println("Not Authorized");
       String response = client.responseBody();
       Serial.print("Response: ");
       Serial.println(response);
+
+      // Turn On Red Led
       digitalWrite(LEDR, HIGH);
+      // LCD Print Not Auhtorized
+      lcd.print("Not Authorized");
     }
 
+    // Delays 2 secs
     delay(2000);
 
+    // Turns Off Leds
     digitalWrite(LEDG, LOW);
     digitalWrite(LEDR, LOW);
 
+    // Clears LCD
     lcd.clear();
     lcd.print(" Access Control ");
     lcd.setCursor(0, 1);
@@ -134,18 +152,22 @@ void loop() {
 //Read new tag if available
 boolean getID() {
   // Getting ready for Reading PICCs
-  if (!mfrc522.PICC_IsNewCardPresent()) {  //If a new PICC placed to RFID reader continue
+  //If a new PICC placed to RFID reader continue
+  if (!mfrc522.PICC_IsNewCardPresent()) {
     return false;
   }
-  if (!mfrc522.PICC_ReadCardSerial()) {  //Since a PICC placed get Serial and continue
+  //Since a PICC placed get Serial and continue
+  if (!mfrc522.PICC_ReadCardSerial()) {
     return false;
   }
+  // Reset TagID to empty
   tagID = "";
-  for (uint8_t i = 0; i < 4; i++) {  // The MIFARE PICCs that we use have 4 byte UID
-    //readCard[i] = mfrc522.uid.uidByte[i];
-    tagID.concat(String(mfrc522.uid.uidByte[i], HEX));  // Adds the 4 bytes in a single String variable
+  // The MIFARE PICCs that we use have 4 byte UID
+  for (uint8_t i = 0; i < 4; i++) {
+    // Adds the 4 bytes in a single String variable
+    tagID.concat(String(mfrc522.uid.uidByte[i], HEX));
   }
-  tagID.toUpperCase();
-  mfrc522.PICC_HaltA();  // Stop reading
+  // Stop reading
+  mfrc522.PICC_HaltA();
   return true;
 }
