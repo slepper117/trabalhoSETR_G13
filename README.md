@@ -4,6 +4,14 @@ Projeto desenvolvido para a disciplina de Sistemas Embebidos e em Tempo Real.
 
 Esta disciplina faz parte do terceiro ano curricular da Licenciatura em Engenharia de Sistemas Informáticos.
 
+## Colaboradores
+
+Este trabalho contou com a colaboração dos seguintes alunos:
+
+6160 - Renato Dantas
+7526 - Jorge Guedes
+17214 - João Morais
+
 ## Contextualização do Trabalho
 
 Para o trabalho prático final, deverá ser realizado um projeto que consistirá no desenvolvimento de um sistema em tempo real que possa ser utilizado como resposta a uma necessidade específica.
